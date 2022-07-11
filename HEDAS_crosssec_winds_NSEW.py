@@ -12,6 +12,7 @@ import datetime as dt
 import xarray as xr
 # from metpy import calc
 from HEDAS_pkg import HEDASds
+import concurrent.futures
 
 
 fname="stored_centers_Dorian.npy" 
@@ -54,3 +55,28 @@ for i in range(len(cxs)):
     # plt.show()
     plt.savefig("tilttest_%i.png"%i, bbox_inches="tight") #, dpi=400
     plt.clf()
+
+
+list_of_HEDASfiles=[]
+allstacks=[]
+
+for findex, file in enumerate(sorted(glob.glob("*.nc"))):
+# for findex, file in enumerate(sorted(glob.glob("*.nc"))[0:39]): 
+### ^ EXAMPLE option for Windward file times
+    list_of_HEDASfiles.append(file)
+
+
+def MP_centerstack_function(file):
+    ds=HEDASds(file)
+    filestrparts=file.split('_')
+    datetimestring=filestrparts[1]
+    print(datetimestring) #prints each time a new file is being processes
+    cstack=ds.get_centerstack() #all center stack returns from TCR center finder
+    ctrxys=np.array([cstack[6],cstack[5]]) #get the x and y grid indices into an array
+    return ctrxys
+
+with concurrent.futures.ProcessPoolExecutor() as executor:
+    results = executor.map(MP_centerstack_function, list_of_HEDASfiles)
+
+    for result in results:
+        allstacks.append(result) #put all these arrays into a big list
