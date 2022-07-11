@@ -35,12 +35,12 @@ class HEDASds:
         fname=self.filename
         filestrparts=fname.split('_')
 
-        datetimestring=filestrparts[1]
-        yr=int(datetimestring[0:4])
-        mo=int(datetimestring[4:6])
-        dy=int(datetimestring[6:8])
-        hr=int(datetimestring[8:10])
-        mn=int(datetimestring[10:12])
+        self.datetimestring=filestrparts[1]
+        yr=int(self.datetimestring[0:4])
+        mo=int(self.datetimestring[4:6])
+        dy=int(self.datetimestring[6:8])
+        hr=int(self.datetimestring[8:10])
+        mn=int(self.datetimestring[10:12])
         fdatetime=dt.datetime(year=yr,month=mo,day=dy,hour=hr,minute=mn)
 
         return fdatetime #file datetime
