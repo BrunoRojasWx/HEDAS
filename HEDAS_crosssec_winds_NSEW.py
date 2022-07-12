@@ -43,27 +43,27 @@ def Xsecplotter(inputwind,windtype,orientation):
     xsec_yaxis_ticks=np.log(thinnedplvs)
     xsec_yaxis=np.log(ds.plvs())
     
-    if orientation=='WE' or 'EW':
+    if orientation=='EW':
         V_inv=inputwind[:,ctr[0],:]
         xsec_xaxis=ds.xdist[ctr[1],:] #use for WE xsec
 
-    if orientation=='NS' or 'SN':
+    if orientation=='NS':
         V_inv=inputwind[:,:,ctr[1]]
         xsec_xaxis=ds.ydist[:,ctr[0]] #use for SN xsec
 
     if windtype=='rad': #for radial wind
         PT=plt.contourf(xsec_xaxis,xsec_yaxis,V_inv,levels=cbrange_Vr,cmap=cm.seismic, extend='both')
-        if orientation=='WE' or 'EW':
+        if orientation=='EW':
             plt.title('Radial Wind W-E cross-section\n%s'%(ds.getime()))
-        if orientation=='NS' or 'SN':
+        if orientation=='NS':
             plt.title('Radial Wind S-N cross-section\n%s'%(ds.getime()))
     
     if windtype=='tan': #for tangential wind
         PT=plt.contourf(xsec_xaxis,xsec_yaxis,V_inv,levels=cbrange_Vt,cmap=cm.jet, extend='both')
-        if orientation=='WE' or 'EW':
+        if orientation=='EW':
             plt.title('Tangential Wind W-E cross-section\n%s'%(ds.getime()))
 
-        if orientation=='NS' or 'SN':
+        if orientation=='NS':
             plt.title('Tangential Wind S-N cross-section\n%s'%(ds.getime()))
 
     plt.ylim(max(xsec_yaxis),min(xsec_yaxis))
