@@ -1,82 +1,112 @@
+#this code makes the North-South and East-West cross sections
+# of tangential and radial wind using the 700mb centers from the 
+# stored centers .npy file
+
 import os
 srcpath=os.getcwd()
 os.chdir(srcpath)
 import netCDF4 as NC
 import numpy as np
 import matplotlib as mpl
-import sys
 import glob
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import datetime as dt
-import xarray as xr
-# from metpy import calc
 from HEDAS_pkg import HEDASds
-import concurrent.futures
 
+fname="stored_centers_Dorian.npy" #stored centers file
 
-fname="stored_centers_Dorian.npy" 
-
-center_file = np.load(fname)
-
+center_file = np.load(fname) 
 
 cxs=center_file[:,0] # all x stacks
 cys=center_file[:,1] # all y stacks
-# stacklvs=[100, 200, 300, 400, 500, 600, 700, 800, 900]
-stacklvs=[200, 300, 400, 500, 600, 700, 800, 900]
 
+#make the directories the files will go into
+# there needs to be no 'CrossSectionsNSEW' directory before running this code
 os.mkdir('CrossSectionsNSEW')
-os.chdir(srcpath+'\\'+"CrossSectionsNSEW") 
+os.chdir("CrossSectionsNSEW") 
 os.mkdir('TanWindNS')
 os.mkdir('TanWindEW')
 os.mkdir('RadWindNS')
 os.mkdir('RadWindEW')
 
+#colorbar ranges
+cbrange_Vr=np.arange(-20,20.0001,.5)
+cbrange_Vt=np.arange(0,100,2)
+cbrange_VtC=np.arange(0,90,5)
 
-for i in range(len(cxs)):
-    cxsi=cxs[i][1:]
-    cysi=cys[i][1:]
 
-    ctr=(cxsi[-1],cysi[-1]) #grabs the lowest level and sets it as the TC center
+os.chdir('/rita/s0/scratch/bsr5234/HEDAS/Dorian') #go to the folder with the netCDF HEDAS data
 
-    adjcxs=cxsi-ctr[0]
-    adjcys=cysi-ctr[1]
+def Xsecplotter(inputwind,windtype,orientation):
+    thinnedplvs=[50,100,200,300,400,500,600,700,800,900,1000]
+    xsec_yaxis_ticks=np.log(thinnedplvs)
+    xsec_yaxis=np.log(ds.plvs())
+    
+    if orientation=='WE' or 'EW':
+        V_inv=inputwind[:,ctr[0],:]
+        xsec_xaxis=ds.xdist[ctr[1],:] #use for WE xsec
 
-    plt.scatter(adjcxs,adjcys,c=stacklvs,cmap=cm.jet)
-    plt.plot(adjcxs,adjcys,'k')
+    if orientation=='NS' or 'SN':
+        V_inv=inputwind[:,:,ctr[1]]
+        xsec_xaxis=ds.ydist[:,ctr[0]] #use for SN xsec
 
-    plt.colorbar()
-    plotradius=50
-    plt.xlim(-plotradius,plotradius)
-    plt.ylim(-plotradius,plotradius)
+    if windtype=='rad': #for radial wind
+        PT=plt.contourf(xsec_xaxis,xsec_yaxis,V_inv,levels=cbrange_Vr,cmap=cm.seismic, extend='both')
+        if orientation=='WE' or 'EW':
+            plt.title('Radial Wind W-E cross-section\n%s'%(ds.getime()))
+        if orientation=='NS' or 'SN':
+            plt.title('Radial Wind S-N cross-section\n%s'%(ds.getime()))
+    
+    if windtype=='tan': #for tangential wind
+        PT=plt.contourf(xsec_xaxis,xsec_yaxis,V_inv,levels=cbrange_Vt,cmap=cm.jet, extend='both')
+        if orientation=='WE' or 'EW':
+            plt.title('Tangential Wind W-E cross-section\n%s'%(ds.getime()))
 
-    plt.title(f'{i}')
+        if orientation=='NS' or 'SN':
+            plt.title('Tangential Wind S-N cross-section\n%s'%(ds.getime()))
 
-    # plt.show()
-    plt.savefig("tilttest_%i.png"%i, bbox_inches="tight") #, dpi=400
+    plt.ylim(max(xsec_yaxis),min(xsec_yaxis))
+    plt.yticks(xsec_yaxis_ticks,thinnedplvs) #positions, labels
+    cb1=plt.colorbar(PT)
+    cb1.set_label(r'ms$^{-1}$')
+    plt.vlines(0, ymax=max(xsec_yaxis),ymin=min(xsec_yaxis),colors='k')
+    plt.xlabel('Horizontal distance from storm center (km)')
+    plt.ylabel('Pressure (hPa)')
+
+    PTG=plt.gcf()
+    PTG.set_size_inches(12,5)
+    if windtype=='tan' and orientation=='EW':
+        os.chdir(srcpath+'/'+"CrossSectionsNSEW/TanWindEW") 
+        plt.savefig('TangentialWind_EWxsec_%s.png' % ds.datetimestring, bbox_inches="tight", dpi=600)
+    if windtype=='tan' and orientation=='NS':
+        os.chdir(srcpath+'/'+"CrossSectionsNSEW/TanWindNS") 
+        plt.savefig('TangentialWind_NSxsec_%s.png' % ds.datetimestring, bbox_inches="tight", dpi=600)
+    if windtype=='rad' and orientation=='EW':
+        os.chdir(srcpath+'/'+"CrossSectionsNSEW/RadWindEW") 
+        plt.savefig('RadialWind_EWxsec_%s.png' % ds.datetimestring, bbox_inches="tight", dpi=600)
+    if windtype=='rad' and orientation=='NS':
+        os.chdir(srcpath+'/'+"CrossSectionsNSEW/RadWindNS") 
+        plt.savefig('RadialWind_NSxsec_%s.png' % ds.datetimestring, bbox_inches="tight", dpi=600)
     plt.clf()
 
+#64:96 is (ATL1-GreatAbaco)
+for findex, hfile in enumerate(sorted(glob.glob("*.nc"))[64:96]):
+    os.chdir('/rita/s0/scratch/bsr5234/HEDAS/Dorian')
 
-list_of_HEDASfiles=[]
-allstacks=[]
+    cxsi=cxs[findex+64] #need to add 64, since findex starts at 0 after the slice,
+    cysi=cys[findex+64] #without slicing findex would be correct
+    ctr=(cxsi[6],cysi[6]) #grabs the 700mb level and sets it as the TC center
+    ds=HEDASds(hfile) #read in the the netCDF file
+    ds.center_relative_winds(ctr) #calculate wind fields
+    Vrad=ds.radwind(ctr) #radial wind
+    Vtan=ds.tanwind(ctr) #tangential wind
+    #plot the 4 kinds of cross sections using the function
+    Xsecplotter(Vrad,'rad','NS') 
+    Xsecplotter(Vrad,'rad','EW')
+    Xsecplotter(Vtan,'tan','NS')
+    Xsecplotter(Vtan,'tan','EW')
+    print(ds.getime()) #prints the time of each file once all 4 plots are done for that time
 
-for findex, file in enumerate(sorted(glob.glob("*.nc"))):
-# for findex, file in enumerate(sorted(glob.glob("*.nc"))[0:39]): 
-### ^ EXAMPLE option for Windward file times
-    list_of_HEDASfiles.append(file)
 
 
-def MP_centerstack_function(file):
-    ds=HEDASds(file)
-    filestrparts=file.split('_')
-    datetimestring=filestrparts[1]
-    print(datetimestring) #prints each time a new file is being processes
-    cstack=ds.get_centerstack() #all center stack returns from TCR center finder
-    ctrxys=np.array([cstack[6],cstack[5]]) #get the x and y grid indices into an array
-    return ctrxys
-
-with concurrent.futures.ProcessPoolExecutor() as executor:
-    results = executor.map(MP_centerstack_function, list_of_HEDASfiles)
-
-    for result in results:
-        allstacks.append(result) #put all these arrays into a big list
