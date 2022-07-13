@@ -12,6 +12,7 @@ import datetime as dt
 import xarray as xr
 # from metpy import calc
 from tdr_tc_centering_with_example import recenter_tc
+from tdr_tc_centering_with_example import distance
 
 
 class HEDASds:
@@ -193,7 +194,12 @@ class HEDASds:
             Y,X=np.indices(Uwnd[0].shape)
             self.xdist=X-center[0] #xy
             self.ydist=Y-center[1]
-            self.radius = np.sqrt(self.xdist**2 + self.ydist**2) #calculates at what radius each grid box is at
+            tc_xctr, tc_yctr = center
+            # self.radius = np.sqrt(self.xdist**2 + self.ydist**2) #calculates at what
+            #  radius each grid box is at (grid box units 1box roughly = 0.7km) [OLD]
+            lat=self.get_vbl('NLAT_surface')[0]
+            lon=self.get_vbl('ELON_surface')[0]
+            self.radius = distance(lat[tc_yctr,tc_xctr],lon[tc_yctr,tc_xctr],lat,lon) #calculates at what radius each grid box is at
             angr=np.arctan2(self.xdist,self.ydist) #calculate the azimuth in radians
             ang=np.rad2deg(angr) #convert to degrees
             ang=(ang) % 360 #convert to meteo azimuth
