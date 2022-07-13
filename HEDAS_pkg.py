@@ -194,11 +194,18 @@ class HEDASds:
             Y,X=np.indices(Uwnd[0].shape)
             self.xdist=X-center[0] #xy
             self.ydist=Y-center[1]
+          
             tc_xctr, tc_yctr = center
             # self.radius = np.sqrt(self.xdist**2 + self.ydist**2) #calculates at what
-            #  radius each grid box is at (grid box units 1box roughly = 0.7km) [OLD]
+            #  radius each grid box is at (grid box units 1box roughly = 0.7km)
             lat=self.get_vbl('NLAT_surface')[0]
             lon=self.get_vbl('ELON_surface')[0]
+            ctr_lon=lon[center[1],center[0]]
+            ctr_lat=lat[center[1],center[0]]
+            
+            # Eastward distance in km (to use for cross section x axis)
+            self.Edist=((lon-ctr_lon)*111.321) * np.cos(np.deg2rad(ctr_lat))
+            self.Ndist=(lat-ctr_lat)*111.321
             self.radius = distance(lat[tc_yctr,tc_xctr],lon[tc_yctr,tc_xctr],lat,lon) #calculates at what radius each grid box is at
             angr=np.arctan2(self.xdist,self.ydist) #calculate the azimuth in radians
             ang=np.rad2deg(angr) #convert to degrees
