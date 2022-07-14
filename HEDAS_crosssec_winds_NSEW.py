@@ -44,12 +44,12 @@ def Xsecplotter(inputwind,windtype,orientation):
     xsec_yaxis=np.log(ds.plvs())
     
     if orientation=='EW':
-        V_inv=inputwind[:,ctr[0],:]
-        xsec_xaxis=ds.xdist[ctr[1],:] #use for WE xsec
+        V_inv=inputwind[:,ctr[1],:]
+        xsec_xaxis=ds.Edist[ctr[0],:] #use for WE xsec
 
     if orientation=='NS':
-        V_inv=inputwind[:,:,ctr[1]]
-        xsec_xaxis=ds.ydist[:,ctr[0]] #use for SN xsec
+        V_inv=inputwind[:,:,ctr[0]]
+        xsec_xaxis=ds.Ndist[:,ctr[1]] #use for SN xsec
 
     if windtype=='rad': #for radial wind
         PT=plt.contourf(xsec_xaxis,xsec_yaxis,V_inv,levels=cbrange_Vr,cmap=cm.seismic, extend='both')
@@ -67,6 +67,8 @@ def Xsecplotter(inputwind,windtype,orientation):
             plt.title('Tangential Wind S-N cross-section\n%s'%(ds.getime()))
 
     plt.ylim(max(xsec_yaxis),min(xsec_yaxis))
+    # plt.xlim(np.nanmin(xsec_xaxis),np.nanmax(xsec_xaxis))
+    plt.xlim(-150,150)
     plt.yticks(xsec_yaxis_ticks,thinnedplvs) #positions, labels
     cb1=plt.colorbar(PT)
     cb1.set_label(r'ms$^{-1}$')
