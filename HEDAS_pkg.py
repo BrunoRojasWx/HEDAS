@@ -282,3 +282,26 @@ class HEDASds:
         shearprofile_dir.append(shr_dir)
         shearprofile_mag.append(shr_mag)
         return shearprofile_dir, shearprofile_mag, Ushearprofile, Vshearprofile
+        
+    def shearprofile(self):
+        """
+        Calulate the mean U/V wind profile over the whole domain at each level
+
+        Returns lists of:
+        U-component profile, V component profile
+
+        All units are in m/s
+        """
+        Uwnd=self.get_pvbl('UGRD')
+        Vwnd=self.get_pvbl('VGRD')
+
+        Umeanwindprofile=[]
+        Vmeanwindprofile=[]
+
+        for lv, plv in enumerate(self.plvs()):
+            umeanwnd=np.nanmean(Uwnd[lv])
+            vmeanwnd=np.nanmean(Vwnd[lv])
+            Umeanwindprofile.append(umeanwnd)
+            Vmeanwindprofile.append(vmeanwnd)
+        
+        return Umeanwindprofile, Vmeanwindprofile
