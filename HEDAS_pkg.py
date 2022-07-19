@@ -231,3 +231,21 @@ class HEDASds:
         angdiff=self.center_relative_winds(center)
         Vtan=self.ws*-1*np.sin(angdiff)
         return Vtan
+
+    def deeplayershear(self):
+        """
+        Calulate the deep layer (850-200mb) windshear over the whole domain
+
+        Returns: shear direction vector heading, shear magnitude, shear U-component, shear V component
+
+        All units are in m/s
+        """
+        Uwnd=self.get_pvbl('UGRD')
+        Vwnd=self.get_pvbl('VGRD')
+        #subtract 200mb - 850mb mean winds
+        DL_Ushear=np.nanmean(Uwnd[5])-np.nanmean(Uwnd[31])
+        DL_Vshear=np.nanmean(Vwnd[5])-np.nanmean(Vwnd[31])
+
+        DLshr_mag=np.sqrt(DL_Ushear**2+DL_Vshear**2)
+        DLshr_dir=(np.rad2deg(np.arctan2(DL_Ushear,DL_Vshear)))%360     #Meteo azimuth vector heading
+        return DLshr_dir, DLshr_mag, DL_Ushear, DL_Vshear
