@@ -249,3 +249,36 @@ class HEDASds:
         DLshr_mag=np.sqrt(DL_Ushear**2+DL_Vshear**2)
         DLshr_dir=(np.rad2deg(np.arctan2(DL_Ushear,DL_Vshear)))%360     #Meteo azimuth vector heading
         return DLshr_dir, DLshr_mag, DL_Ushear, DL_Vshear
+
+    def shearprofile(self):
+        """
+        Calulate the full shear profile over the whole domain
+
+        Returns lists of:
+        shear direction vector heading, shear magnitude, shear U-component, shear V component
+
+        All units are in m/s
+        """
+        Uwnd=self.get_pvbl('UGRD')
+        Vwnd=self.get_pvbl('VGRD')
+                    
+        Ushearprofile=[]
+        Vshearprofile=[]
+        shearprofile_dir=[]
+        shearprofile_mag=[]
+
+        for lv, plv in enumerate(self.plvs()):
+            umeanwnd=np.nanmean(Uwnd[lv])
+            vmeanwnd=np.nanmean(Vwnd[lv])
+            if lv<(len(Uwnd)-1):
+                Ushear=np.nanmean(Uwnd[lv+1])-np.nanmean(Uwnd[lv])
+                Vshear=np.nanmean(Vwnd[lv+1])-np.nanmean(Vwnd[lv])
+                shr_mag=np.sqrt(Ushear**2+Vshear**2)
+                shr_dir=(np.rad2deg(np.arctan2(Ushear,Vshear)))%360 
+                #Meteo azimuth vector heading
+
+        Ushearprofile.append(Ushear)
+        Vshearprofile.append(Vshear)
+        shearprofile_dir.append(shr_dir)
+        shearprofile_mag.append(shr_mag)
+        return shearprofile_dir, shearprofile_mag, Ushearprofile, Vshearprofile
