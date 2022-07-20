@@ -4,13 +4,9 @@ os.chdir(srcpath)
 import netCDF4 as NC
 import numpy as np
 import matplotlib as mpl
-import sys
-import glob
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import datetime as dt
-import xarray as xr
-# from metpy import calc
 from tdr_tc_centering_with_example import recenter_tc
 from tdr_tc_centering_with_example import distance
 
@@ -338,7 +334,7 @@ class HEDASds:
         shearprofile_mag.append(shr_mag)
         return shearprofile_dir, shearprofile_mag, Ushearprofile, Vshearprofile
         
-    def shearprofile(self):
+    def meanwindprofile(self):
         """
         Calulate the mean U/V wind profile over the whole domain at each level
 
