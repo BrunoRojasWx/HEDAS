@@ -1,3 +1,6 @@
+# this code is the old method of calculating and storing
+# the TC centers using the Fischer algorithm 
+# (See HEDAS_centerstackerMP.py for faster code)
 import os
 srcpath=os.getcwd()
 os.chdir(srcpath)

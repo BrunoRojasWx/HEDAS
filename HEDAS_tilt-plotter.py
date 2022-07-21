@@ -32,6 +32,7 @@ for findex, hfile in enumerate(sorted(glob.glob("*.nc"))):
 
     ctr=(cxsi[-1],cysi[-1]) #grabs the lowest level (900mb) and sets it as the TC center
 
+    # adjust the center stack to be relative to the 900mb center
     adjcxs=cxsi-ctr[0]
     adjcys=cysi-ctr[1]
 
