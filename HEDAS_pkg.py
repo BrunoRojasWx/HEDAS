@@ -283,6 +283,15 @@ class HEDASds:
         Vtan=self.ws*-1*np.sin(angdiff)
         return Vtan
 
+    def crosssection_nan_err_check(self,xsec,xaxis):
+        """
+        This checks if there is a nan value in the x axis
+        and then adjusts the cross section to prevent a 
+        broken plot
+        """
+        keep=~np.ma.getmask(xaxis[:])       # get the mask of the X-axis
+        return xsec[:,keep], xaxis[keep]    # Only keep columns that aren't masked out at the x-axis
+        
     def deeplayershear(self):
         """
         Calulate the deep layer (850-200mb) windshear over the whole domain
