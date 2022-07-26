@@ -331,37 +331,39 @@ class HEDASds:
             umeanwnd=np.nanmean(Uwnd[lv])
             vmeanwnd=np.nanmean(Vwnd[lv])
             if lv<(len(Uwnd)-1):
-                Ushear=np.nanmean(Uwnd[lv+1])-np.nanmean(Uwnd[lv])
-                Vshear=np.nanmean(Vwnd[lv+1])-np.nanmean(Vwnd[lv])
+                Ushear=np.nanmean(Uwnd[lv])-np.nanmean(Uwnd[lv+1])
+                Vshear=np.nanmean(Vwnd[lv])-np.nanmean(Vwnd[lv+1])
                 shr_mag=np.sqrt(Ushear**2+Vshear**2)
                 shr_dir=(np.rad2deg(np.arctan2(Ushear,Vshear)))%360 
                 #Meteo azimuth vector heading
 
-        Ushearprofile.append(Ushear)
-        Vshearprofile.append(Vshear)
-        shearprofile_dir.append(shr_dir)
-        shearprofile_mag.append(shr_mag)
+                Ushearprofile.append(Ushear)
+                Vshearprofile.append(Vshear)
+                shearprofile_dir.append(shr_dir)
+                shearprofile_mag.append(shr_mag)
         return shearprofile_dir, shearprofile_mag, Ushearprofile, Vshearprofile
         
-    def meanwindprofile(self):
+    def meanheights(self):
         """
-        Calulate the mean U/V wind profile over the whole domain at each level
+        Calulate the mean height at each level
 
-        Returns lists of:
-        U-component profile, V component profile
+        Returns list of mean height at each pressure level 
 
-        All units are in m/s
+        Units: metres (m)
         """
-        Uwnd=self.get_pvbl('UGRD')
-        Vwnd=self.get_pvbl('VGRD')
+        hgt=self.get_pvbl('HGT')
 
-        Umeanwindprofile=[]
-        Vmeanwindprofile=[]
-
+        self.heightprofile=[]
+        self.thicknesses=[]
+        self.midptheights=[]
+        self.midplvs=[]
         for lv, plv in enumerate(self.plvs()):
-            umeanwnd=np.nanmean(Uwnd[lv])
-            vmeanwnd=np.nanmean(Vwnd[lv])
-            Umeanwindprofile.append(umeanwnd)
-            Vmeanwindprofile.append(vmeanwnd)
+            hgtmean=np.nanmean(hgt[lv])
+            self.heightprofile.append(hgtmean)
+            if lv < (len(self.plvs())-1):
+                hgtmean_l=np.nanmean(hgt[lv+1])
+                self.thicknesses.append(hgtmean-hgtmean_l)
+                self.midptheights.append((hgtmean+hgtmean_l)/2)
+                self.midplvs.append((plv+self.plvs()[lv+1])/2)
         
-        return Umeanwindprofile, Vmeanwindprofile
+        return self.heightprofile
