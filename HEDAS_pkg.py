@@ -3,12 +3,7 @@ srcpath=os.getcwd()
 os.chdir(srcpath)
 import netCDF4 as NC
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import datetime as dt
-from tdr_tc_centering_with_example import recenter_tc
-from tdr_tc_centering_with_example import distance
 
 
 class HEDASds:
@@ -164,6 +159,8 @@ class HEDASds:
         Gets the TC center based on Michael Fischer's center finding algorithm at one level,
         the level (lv) is the vertical index (0 is the top at 50mb / 43 is the last at 1000mb)
         """
+        from tdr_tc_centering_with_example import recenter_tc
+
         tc_sectors=1
         spad=3
         num_iters=50
@@ -235,6 +232,8 @@ class HEDASds:
 
         Center needs to be a pair of grid indexes (x, y)
         """
+        from tdr_tc_centering_with_example import distance
+
         if self.center_relative_winds_initialized==False: #checks if this has been initialized/called before, if not, it will run and make the pressure variable cubes
             if center==None: #if no center is provided, the function will use:
                 *_, tc_yctr, tc_xctr = self.get_center(25) # 700 mb center (~3km/flight level)
