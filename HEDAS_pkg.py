@@ -5,7 +5,6 @@ import netCDF4 as NC
 import numpy as np
 import datetime as dt
 
-
 class HEDASds:
 
     number_of_files = 0 #class variable, increases with each HEDASds instance
@@ -117,7 +116,18 @@ class HEDASds:
         Grabs the pressure variable, uses variable key type
 
         Options are the pres_cubes keys:
-        ['HGT', 'TMP', 'RH', 'TCDC', 'DPT', 'SPFH', 'VVEL', 'DZDT', 'UGRD', 'VGRD', 'REFD', 'LWHR', 'SWHR']
+        HGT  = Geopotential Height [m] ||
+        TMP  = Temperature [K] ||
+        DPT  = Dew Point Temperature [K] ||
+        RH   = Relative humidity [%] ||
+        UGRD = U-Component of Wind [m/s] ||
+        VGRD = V-Component of Wind [m/s] ||
+        TCDC = Total Cloud Cover [%] ||
+        SPFH = Specific Humidity [kg/kg] ||
+        VVEL = Vertical Velocity (Pressure) [Pa/s] ||
+        DZDT = Vertical Velocity (Geometric) [m/s] ||
+        LWHR = Long-Wave Radiative Heating Rate [K/s] ||
+        SWHR = Solar (Shortwave) Radiative Heating Rate [K/s] ||
         
         If no pressure variable type is chosen, function will return all pressure cubes in a dictionary
         """
@@ -144,6 +154,51 @@ class HEDASds:
             return self.pres_cubes[preskeyvbl] #returns a masked array cube of only the values
         else:
             return self.pres_cubes #returns the full dictionary (each vbl includes values and metadata)
+    
+    def nonpkeys(self):
+        """
+        Returns all the full variable keys that are not part of the pressure cubes (a filter essentially)
+
+        ['latitude', 'longitude', 'time', 'PRMSL_meansealevel', 'REFC_atmoscol', 'GUST_surface', 'MSLET_meansealevel', 'PRES_surface',
+            'HGT_surface', 'TMP_surface', 'TSOIL_0M0D1mbelowground', 'SOILW_0M0D1mbelowground', 'SOILL_0M0D1mbelowground',
+            'TSOIL_0D1M0D4mbelowground', 'SOILW_0D1M0D4mbelowground', 'SOILL_0D1M0D4mbelowground', 'TSOIL_0D4M1mbelowground',
+            'SOILW_0D4M1mbelowground', 'SOILL_0D4M1mbelowground', 'TSOIL_1M2mbelowground', 'SOILW_1M2mbelowground', 'SOILL_1M2mbelowground',
+            'TSOIL_3munderground', 'MSTAV_0M1mbelowground', 'SOILM_0M2mbelowground', 'WEASD_surface', 'TMP_2maboveground', 'SPFH_2maboveground',
+            'DPT_2maboveground', 'RH_2maboveground', 'UGRD_10maboveground', 'VGRD_10maboveground', 'CPRAT_surface', 'PRATE_surface',
+            'APCP_surface', 'ACPCP_surface', 'NCPCP_surface', 'CSNOW_surface', 'CICEP_surface', 'CFRZR_surface', 'CRAIN_surface',
+            'LHTFL_surface', 'SHTFL_surface', 'GFLUX_surface', 'MFLX_surface', 'EVP_surface', 'PEVAP_surface', 'SFCR_surface',
+            'FRICV_surface', 'VEG_surface', 'LFTX_500M1000mb', 'CAPE_surface', 'CIN_surface', 'PWAT_atmoscol', 'TCOLW_atmoscol',
+            'TCOLI_atmoscol', 'TCOLR_atmoscol', 'TCOLS_atmoscol', 'TCOLC_atmoscol', 'LCDC_lowcloudlayer', 'MCDC_middlecloudlayer',
+            'HCDC_highcloudlayer', 'TCDC_atmoscol', 'CDLYR_atmoscol', 'CDCON_atmoscol', 'PRES_cloudbase', 'HGT_cloudbase', 'HGT_cloudceiling',
+            'PRES_cloudtop', 'HGT_cloudtop', 'TMP_cloudtop', 'BRTMP_topofatmosphere', 'DSWRF_surface', 'DLWRF_surface', 'USWRF_surface',
+            'ULWRF_surface', 'ULWRF_topofatmosphere', 'USWRF_topofatmosphere', 'CSDSF_surface', 'HLCY_3000M0maboveground', 'HGT_tropopause',
+            'HGT_0Cisotherm', 'HGT_highesttroposphericfreezinglevel', 'SPFH_30M0mbaboveground', 'UGRD_30M0mbaboveground',
+            'VGRD_30M0mbaboveground', 'PWAT_30M0mbaboveground', 'PLI_30M0mbaboveground', 'N4LFTX_180M0mbaboveground', 'CAPE_180M0mbaboveground',
+            'CIN_180M0mbaboveground', 'HPBL_surface', 'CAPE_90M0mbaboveground', 'CIN_90M0mbaboveground', 'CAPE_255M0mbaboveground',
+            'CIN_255M0mbaboveground', 'NLAT_surface', 'ELON_surface', 'LAND_surface', 'WTMP_surface']
+        """
+        if self.pvbl_initialized==False: #checks if this has been initialized/called before, if not, it will run and make the pressure variable cubes        
+            self.get_pvbl() #the method needs to be run at least once before the all_pres_vkeys can be accessed, this ensures that if get_pvbl has not been run, all_pres_vkeys can still be accessed
+        non_pres_keys = [s for s in self.allvblkeys if s not in self.all_pres_vkeys] #gets all the full keys not used in the pressure cubes
+        return non_pres_keys
+    
+    def thetae(self):
+        """
+        Calculates theta-e using metpy
+
+        Returns a pressure cube of theta-e [K]
+        """
+        from metpy.units import units
+        from metpy import calc
+
+        # this adds units to the variables so they can be used by metpy
+        temp = units.Quantity(self.get_pvbl('TMP'), "K")
+        dewp = units.Quantity(self.get_pvbl('DPT'), "K")
+        pres = units.Quantity(self.plvs(), "hPa")
+
+        pres_reshaped = np.expand_dims(np.expand_dims(pres, axis=1), axis=1) # fix broadcasting issue
+        thetaE = np.ma.array(calc.equivalent_potential_temperature(pres_reshaped,temp,dewp))
+        return thetaE
 
     def get_ws(self): 
         """
@@ -198,33 +253,6 @@ class HEDASds:
         C_stack = list(C_stack_unzip)
         return C_stack
 
-    def nonpkeys(self):
-        """
-        Returns all the full variable keys that are not part of the pressure cubes (a filter essentially)
-
-        ['latitude', 'longitude', 'time', 'PRMSL_meansealevel', 'REFC_atmoscol', 'GUST_surface', 'MSLET_meansealevel', 'PRES_surface',
-            'HGT_surface', 'TMP_surface', 'TSOIL_0M0D1mbelowground', 'SOILW_0M0D1mbelowground', 'SOILL_0M0D1mbelowground',
-            'TSOIL_0D1M0D4mbelowground', 'SOILW_0D1M0D4mbelowground', 'SOILL_0D1M0D4mbelowground', 'TSOIL_0D4M1mbelowground',
-            'SOILW_0D4M1mbelowground', 'SOILL_0D4M1mbelowground', 'TSOIL_1M2mbelowground', 'SOILW_1M2mbelowground', 'SOILL_1M2mbelowground',
-            'TSOIL_3munderground', 'MSTAV_0M1mbelowground', 'SOILM_0M2mbelowground', 'WEASD_surface', 'TMP_2maboveground', 'SPFH_2maboveground',
-            'DPT_2maboveground', 'RH_2maboveground', 'UGRD_10maboveground', 'VGRD_10maboveground', 'CPRAT_surface', 'PRATE_surface',
-            'APCP_surface', 'ACPCP_surface', 'NCPCP_surface', 'CSNOW_surface', 'CICEP_surface', 'CFRZR_surface', 'CRAIN_surface',
-            'LHTFL_surface', 'SHTFL_surface', 'GFLUX_surface', 'MFLX_surface', 'EVP_surface', 'PEVAP_surface', 'SFCR_surface',
-            'FRICV_surface', 'VEG_surface', 'LFTX_500M1000mb', 'CAPE_surface', 'CIN_surface', 'PWAT_atmoscol', 'TCOLW_atmoscol',
-            'TCOLI_atmoscol', 'TCOLR_atmoscol', 'TCOLS_atmoscol', 'TCOLC_atmoscol', 'LCDC_lowcloudlayer', 'MCDC_middlecloudlayer',
-            'HCDC_highcloudlayer', 'TCDC_atmoscol', 'CDLYR_atmoscol', 'CDCON_atmoscol', 'PRES_cloudbase', 'HGT_cloudbase', 'HGT_cloudceiling',
-            'PRES_cloudtop', 'HGT_cloudtop', 'TMP_cloudtop', 'BRTMP_topofatmosphere', 'DSWRF_surface', 'DLWRF_surface', 'USWRF_surface',
-            'ULWRF_surface', 'ULWRF_topofatmosphere', 'USWRF_topofatmosphere', 'CSDSF_surface', 'HLCY_3000M0maboveground', 'HGT_tropopause',
-            'HGT_0Cisotherm', 'HGT_highesttroposphericfreezinglevel', 'SPFH_30M0mbaboveground', 'UGRD_30M0mbaboveground',
-            'VGRD_30M0mbaboveground', 'PWAT_30M0mbaboveground', 'PLI_30M0mbaboveground', 'N4LFTX_180M0mbaboveground', 'CAPE_180M0mbaboveground',
-            'CIN_180M0mbaboveground', 'HPBL_surface', 'CAPE_90M0mbaboveground', 'CIN_90M0mbaboveground', 'CAPE_255M0mbaboveground',
-            'CIN_255M0mbaboveground', 'NLAT_surface', 'ELON_surface', 'LAND_surface', 'WTMP_surface']
-        """
-        if self.pvbl_initialized==False: #checks if this has been initialized/called before, if not, it will run and make the pressure variable cubes        
-            self.get_pvbl() #the method needs to be run at least once before the all_pres_vkeys can be accessed, this ensures that if get_pvbl has not been run, all_pres_vkeys can still be accessed
-        non_pres_keys = [s for s in self.allvblkeys if s not in self.all_pres_vkeys] #gets all the full keys not used in the pressure cubes
-        return non_pres_keys
-
     def center_relative_winds(self, center=None):
         """
         Calculates the wind angle difference from perfectly radial/tangential.
@@ -277,10 +305,32 @@ class HEDASds:
         Vrad=self.ws*np.cos(angdiff)
         return Vrad
 
-    def tanwind(self, center):
+    def tanwind(self, center=None):
         angdiff=self.center_relative_winds(center)
         Vtan=self.ws*-1*np.sin(angdiff)
         return Vtan
+
+    def azimuthal_average(self, field):
+        if self.center_relative_winds_initialized==False: #checks if this has been initialized/called before
+            self.center_relative_winds() # if not, it will run and make the pressure variable cubes
+        
+        rradius = self.radius.astype(np.int32) #rounds radii to nearest integer
+        radius_ravel = rradius.ravel()
+        rkeep=~np.ma.getmask(radius_ravel)
+        self.range_bins = np.array(list(set(radius_ravel[rkeep])))
+
+        stacked_aziavgs=[]
+        for _, hozslice in enumerate(field):
+            raveled_field = hozslice.ravel()
+            keep=~np.ma.getmask(raveled_field)  # get the mask of the desired field
+            level_aziavg=np.histogram(radius_ravel[keep], weights=raveled_field[keep], bins=self.range_bins)
+            radial_bintotals=np.histogram(radius_ravel[keep], bins=self.range_bins)
+            azimean = level_aziavg[0] / radial_bintotals[0]
+            stacked_aziavgs.append(azimean)
+            # print(level_aziavg)
+            # print(len(level_aziavg))
+        stacked_aziavgs=np.array(stacked_aziavgs)
+        return stacked_aziavgs
 
     def crosssection_nan_err_check(self,xsec,xaxis):
         """
@@ -342,6 +392,29 @@ class HEDASds:
                 shearprofile_mag.append(shr_mag)
         return shearprofile_dir, shearprofile_mag, Ushearprofile, Vshearprofile
         
+    def meanwindprofile(self):
+        """
+        Calulate the mean U/V wind profile over the whole domain at each level
+
+        Returns lists of:
+        U-component profile, V component profile
+
+        All units are in m/s
+        """
+        Uwnd=self.get_pvbl('UGRD')
+        Vwnd=self.get_pvbl('VGRD')
+
+        Umeanwindprofile=[]
+        Vmeanwindprofile=[]
+
+        for lv, plv in enumerate(self.plvs()):
+            umeanwnd=np.nanmean(Uwnd[lv])
+            vmeanwnd=np.nanmean(Vwnd[lv])
+            Umeanwindprofile.append(umeanwnd)
+            Vmeanwindprofile.append(vmeanwnd)
+        
+        return Umeanwindprofile, Vmeanwindprofile
+
     def meanheights(self):
         """
         Calulate the mean height at each level
