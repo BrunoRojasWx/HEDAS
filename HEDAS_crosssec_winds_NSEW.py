@@ -29,11 +29,14 @@ os.mkdir('TanWindNS')
 os.mkdir('TanWindEW')
 os.mkdir('RadWindNS')
 os.mkdir('RadWindEW')
+os.mkdir('VertVelNS')
+os.mkdir('VertVelEW')
 
 #colorbar ranges
 cbrange_Vr=np.arange(-20,20.0001,.5)
 cbrange_Vt=np.arange(0,100,2)
 cbrange_VtC=np.arange(0,90,5)
+cbrange_W=np.arange(-10,10.0001,.2)
 
 
 os.chdir('/rita/s0/scratch/bsr5234/HEDAS/Dorian') #go to the folder with the netCDF HEDAS data
@@ -61,12 +64,18 @@ def Xsecplotter(inputwind,windtype,orientation):
             plt.title('Radial Wind W-E cross-section\n%s'%(ds.getime()))
         if orientation=='NS':
             plt.title('Radial Wind S-N cross-section\n%s'%(ds.getime()))
-    
+
+    if windtype=='vvl': #for vertical velocity
+        PT=plt.contourf(xsec_xaxis,xsec_yaxis,XSec,levels=cbrange_W,cmap=cm.seismic, extend='both')
+        if orientation=='EW':
+            plt.title('Vertical Velocity W-E cross-section\n%s'%(ds.getime()))
+        if orientation=='NS':
+            plt.title('Vertical Velocity S-N cross-section\n%s'%(ds.getime()))
+
     if windtype=='tan': #for tangential wind
         PT=plt.contourf(xsec_xaxis,xsec_yaxis,XSec,levels=cbrange_Vt,cmap=cm.jet, extend='both')
         if orientation=='EW':
             plt.title('Tangential Wind W-E cross-section\n%s'%(ds.getime()))
-
         if orientation=='NS':
             plt.title('Tangential Wind S-N cross-section\n%s'%(ds.getime()))
 
@@ -94,6 +103,12 @@ def Xsecplotter(inputwind,windtype,orientation):
     if windtype=='rad' and orientation=='NS':
         os.chdir(srcpath+'/'+"CrossSectionsNSEW/RadWindNS") 
         plt.savefig('RadialWind_NSxsec_%s.png' % ds.datetimestring, bbox_inches="tight", dpi=600)
+    if windtype=='vvl' and orientation=='EW':
+        os.chdir(srcpath+'/'+"CrossSectionsNSEW/VertVelEW") 
+        plt.savefig('VertVel_EWxsec_%s.png' % ds.datetimestring, bbox_inches="tight", dpi=600)
+    if windtype=='vvl' and orientation=='NS':
+        os.chdir(srcpath+'/'+"CrossSectionsNSEW/VertVelNS") 
+        plt.savefig('VertVel_NSxsec_%s.png' % ds.datetimestring, bbox_inches="tight", dpi=600)
     plt.clf()
 
 #64:96 is (ATL1-GreatAbaco)
@@ -107,11 +122,15 @@ for findex, hfile in enumerate(sorted(glob.glob("*.nc"))[64:96]):
     ds.center_relative_winds(ctr) #calculate wind fields
     Vrad=ds.radwind(ctr) #radial wind
     Vtan=ds.tanwind(ctr) #tangential wind
+    VerVel=ds.get_pvbl('DZDT') #tangential wind
+    
     #plot the 4 kinds of cross sections using the function
     Xsecplotter(Vrad,'rad','NS') 
     Xsecplotter(Vrad,'rad','EW')
     Xsecplotter(Vtan,'tan','NS')
     Xsecplotter(Vtan,'tan','EW')
+    Xsecplotter(VerVel,'vvl','NS') 
+    Xsecplotter(VerVel,'vvl','EW')
     print(ds.getime()) #prints the time of each file once all 4 plots are done for that time
 
 
