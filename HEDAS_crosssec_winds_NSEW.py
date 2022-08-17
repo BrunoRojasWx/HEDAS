@@ -39,7 +39,7 @@ cbrange_VtC=np.arange(0,90,5)
 os.chdir('/rita/s0/scratch/bsr5234/HEDAS/Dorian') #go to the folder with the netCDF HEDAS data
 
 def Xsecplotter(inputwind,windtype,orientation):
-    thinnedplvs=[50,100,200,300,400,500,600,700,800,900,1000]
+    thinnedplvs=[100,200,300,400,500,600,700,800,900,1000]
     xsec_yaxis_ticks=np.log(thinnedplvs)
     xsec_yaxis=np.log(ds.plvs())
     
@@ -70,7 +70,7 @@ def Xsecplotter(inputwind,windtype,orientation):
         if orientation=='NS':
             plt.title('Tangential Wind S-N cross-section\n%s'%(ds.getime()))
 
-    plt.ylim(max(xsec_yaxis),min(xsec_yaxis))
+    plt.ylim(max(xsec_yaxis),min(xsec_yaxis[1:]))
     plt.xlim(np.nanmin(xsec_xaxis),np.nanmax(xsec_xaxis))
     # plt.xlim(-150,150)
     plt.yticks(xsec_yaxis_ticks,thinnedplvs) #positions, labels
